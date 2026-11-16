@@ -1,8 +1,7 @@
 import type { NextConfig } from "next";
 
-// The API is reached through /api on this same origin, so cookies stay first-party
-// and the browser never needs CORS.
-const API_ORIGIN = process.env.API_ORIGIN ?? "http://127.0.0.1:4000";
+// The data API is the route handlers under src/app/api (they call Convex), on this same origin,
+// so cookies stay first-party and the browser never needs CORS or to talk to Convex directly.
 const isDev = process.env.NODE_ENV !== "production";
 
 // 'unsafe-inline' scripts are needed by Next's inline bootstrap unless we switch to
@@ -31,9 +30,6 @@ const nextConfig: NextConfig = {
         as: "*.css",
       },
     },
-  },
-  async rewrites() {
-    return [{ source: "/api/:path*", destination: `${API_ORIGIN}/:path*` }];
   },
   async headers() {
     return [

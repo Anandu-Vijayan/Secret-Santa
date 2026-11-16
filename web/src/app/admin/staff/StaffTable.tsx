@@ -34,8 +34,11 @@ export function StaffTable() {
   const [q, setQ] = useState("");
   const addRef = useRef<HTMLDialogElement>(null);
   const csvRef = useRef<HTMLDialogElement>(null);
+  const editRef = useRef<HTMLDialogElement>(null);
   const [addErr, setAddErr] = useState<string | null>(null);
   const [rowErr, setRowErr] = useState<string | null>(null);
+  const [editing, setEditing] = useState<Member | null>(null);
+  const [editErr, setEditErr] = useState<string | null>(null);
 
   if (error?.status === 403) return <ErrorNote error="Only organisers can open this page." />;
   if (!me || !data) return <Loading />;
@@ -54,6 +57,27 @@ export function StaffTable() {
       reload();
     } catch (e) {
       setAddErr((e as ApiError).message);
+    }
+  }
+
+  function openEdit(m: Member) {
+    setEditing(m);
+    setEditErr(null);
+    editRef.current?.showModal();
+  }
+
+  async function saveEmail(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!editing) return;
+    const f = new FormData(e.currentTarget);
+    setEditErr(null);
+    try {
+      await api(`/admin/members/${editing.id}`, { method: "PATCH", body: { email: f.get("email") } });
+      editRef.current?.close();
+      setEditing(null);
+      reload();
+    } catch (err) {
+      setEditErr((err as ApiError).message);
     }
   }
 
@@ -134,6 +158,11 @@ export function StaffTable() {
                     <Status m={m} />
                   </td>
                   <td style={{ textAlign: "right" }}>
+                    {m.role !== "admin" && m.status === "invited" && (
+                      <button className="btn btn-ghost-ink btn-sm" style={{ marginRight: 8 }} onClick={() => openEdit(m)} aria-label={`Edit email for ${m.name}`}>
+                        Edit email
+                      </button>
+                    )}
                     {m.role !== "admin" && (
                       <button className="btn btn-ghost-ink btn-sm" onClick={() => remove(m)} aria-label={`Remove ${m.name}`}>
                         Remove
@@ -186,6 +215,31 @@ export function StaffTable() {
             </button>
             <button type="submit" className="btn btn-red btn-sm">
               Add person
+            </button>
+          </div>
+        </form>
+      </dialog>
+
+      <dialog ref={editRef} className="dialog" aria-labelledby="edit-title" onClose={() => setEditing(null)}>
+        {/* key remounts the form per person so the field starts with their current email */}
+        <form key={editing?.id ?? "none"} className="dialog-body" onSubmit={saveEmail}>
+          <h2 id="edit-title">Edit email</h2>
+          <p className="card-muted" style={{ marginTop: 4 }}>
+            {editing ? <>For {editing.name}. </> : null}They haven&apos;t signed in yet. They must sign in with Google using this exact email.
+          </p>
+          <div className="form-grid" style={{ marginTop: 18 }}>
+            <label className="lbl">
+              Work email
+              <input className="input" name="email" type="email" required maxLength={120} defaultValue={editing?.email ?? ""} autoFocus />
+            </label>
+            <FormError message={editErr} />
+          </div>
+          <div className="dialog-actions">
+            <button type="button" className="btn btn-ghost-ink btn-sm" onClick={() => editRef.current?.close()}>
+              Cancel
+            </button>
+            <button type="submit" className="btn btn-red btn-sm">
+              Save email
             </button>
           </div>
         </form>

@@ -30,6 +30,11 @@ const ERRORS: Record<string, string> = {
 
 const DEV_LOGIN = process.env.NEXT_PUBLIC_DEV_LOGIN === "true";
 
+/** Local-only hint: the cause and the two ways out, instead of a dead end. */
+const DEV_HINT =
+  " Add GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET to web/.env.local and restart (see the README), or use the Developer sign-in below.";
+const messageFor = (error: string) => ERRORS[error] + (DEV_LOGIN && error === "google_not_configured" ? DEV_HINT : "");
+
 export function LoginCard({ initial, error }: { initial: Mode; error?: string }) {
   const [mode, setMode] = useState<Mode>(initial);
   const c = copy[mode];
@@ -51,7 +56,7 @@ export function LoginCard({ initial, error }: { initial: Mode; error?: string })
 
       {error && ERRORS[error] && (
         <div style={{ marginBottom: 18, textAlign: "left" }}>
-          <FormError message={ERRORS[error]} />
+          <FormError message={messageFor(error)} />
           {error === "not_invited" && mode === "staff" && (
             <button type="button" className="btn btn-ghost-ink btn-sm" style={{ marginTop: 10 }} onClick={() => setMode("admin")}>
               Set up your own company
